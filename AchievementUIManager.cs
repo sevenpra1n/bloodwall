@@ -24,6 +24,24 @@ public class AchievementUIManager : MonoBehaviour
     [SerializeField] private Button spendClaimButton;
     [SerializeField] private Button spendUnavailableButton;
 
+    [Header("Achievement 3: Rarity Items")]
+    [SerializeField] private Image rarityAchievImage;
+    [SerializeField] private Sprite[] rarityAchievSprites; // 6 sprites: index = claimed levels (0-5)
+    [SerializeField] private Text rarityAchievTitle;
+    [SerializeField] private Text rarityProgressText;
+    [SerializeField] private Button rarityClaimButton;
+    [SerializeField] private Button rarityUnavailableButton;
+
+    [Header("Achievement 4: Dodge / Enemy Miss")]
+    [SerializeField] private Image missAchievImage;
+    [SerializeField] private Sprite[] missAchievSprites; // 6 sprites: index = claimed levels (0-5)
+    [SerializeField] private Text missAchievTitle;
+    [SerializeField] private Text missProgressText;
+    [SerializeField] private Button missClaimButton;
+    [SerializeField] private Button missUnavailableButton;
+
+    private static readonly string[] RarityNames = { "Обычный", "Редкий", "Эпический", "Легендарный", "Мифический" };
+
     private CanvasGroup panelCanvasGroup;
     private RectTransform panelRectTransform;
     private bool isAnimating = false;
@@ -60,6 +78,12 @@ public class AchievementUIManager : MonoBehaviour
 
         if (spendClaimButton != null)
             spendClaimButton.onClick.AddListener(ClaimSpendReward);
+
+        if (rarityClaimButton != null)
+            rarityClaimButton.onClick.AddListener(ClaimRarityReward);
+
+        if (missClaimButton != null)
+            missClaimButton.onClick.AddListener(ClaimMissReward);
     }
 
     // ─── Open / Close ─────────────────────────────────────────────────────────
@@ -89,6 +113,8 @@ public class AchievementUIManager : MonoBehaviour
         if (achievementSystem == null) return;
         UpdateDamageAchievement();
         UpdateSpendAchievement();
+        UpdateRarityAchievement();
+        UpdateMissAchievement();
     }
 
     private void UpdateDamageAchievement()
@@ -169,6 +195,75 @@ public class AchievementUIManager : MonoBehaviour
             spendUnavailableButton.gameObject.SetActive(!claimable && !allDone);
     }
 
+    private void UpdateRarityAchievement()
+    {
+        int level = achievementSystem.GetRarityLevel();
+        int progress = achievementSystem.GetRarityProgress();
+
+        // Sprite
+        if (rarityAchievImage != null && rarityAchievSprites != null && rarityAchievSprites.Length > 0)
+        {
+            int spriteIndex = Mathf.Clamp(level, 0, rarityAchievSprites.Length - 1);
+            if (rarityAchievSprites[spriteIndex] != null)
+                rarityAchievImage.sprite = rarityAchievSprites[spriteIndex];
+        }
+
+        // Progress text: show next rarity to unlock, or "Выполнено!"
+        if (rarityProgressText != null)
+        {
+            if (level >= AchievementSystem.RarityRewards.Length)
+            {
+                rarityProgressText.text = "Выполнено!";
+            }
+            else
+            {
+                string nextRarity = (level < RarityNames.Length) ? RarityNames[level] : "";
+                rarityProgressText.text = (progress > level ? "✓" : "") + nextRarity;
+            }
+        }
+
+        // Buttons
+        bool allDone = level >= AchievementSystem.RarityRewards.Length;
+        bool claimable = achievementSystem.IsRarityClaimable();
+
+        if (rarityClaimButton != null)
+            rarityClaimButton.gameObject.SetActive(claimable && !allDone);
+        if (rarityUnavailableButton != null)
+            rarityUnavailableButton.gameObject.SetActive(!claimable && !allDone);
+    }
+
+    private void UpdateMissAchievement()
+    {
+        int level = achievementSystem.GetMissLevel();
+        int totalMisses = achievementSystem.GetTotalMisses();
+
+        // Sprite
+        if (missAchievImage != null && missAchievSprites != null && missAchievSprites.Length > 0)
+        {
+            int spriteIndex = Mathf.Clamp(level, 0, missAchievSprites.Length - 1);
+            if (missAchievSprites[spriteIndex] != null)
+                missAchievImage.sprite = missAchievSprites[spriteIndex];
+        }
+
+        // Progress text
+        if (missProgressText != null)
+        {
+            if (level >= AchievementSystem.MissTargets.Length)
+                missProgressText.text = "Выполнено!";
+            else
+                missProgressText.text = totalMisses.ToString() + " / " + AchievementSystem.MissTargets[level].ToString();
+        }
+
+        // Buttons
+        bool allDone = level >= AchievementSystem.MissTargets.Length;
+        bool claimable = achievementSystem.IsMissClaimable();
+
+        if (missClaimButton != null)
+            missClaimButton.gameObject.SetActive(claimable && !allDone);
+        if (missUnavailableButton != null)
+            missUnavailableButton.gameObject.SetActive(!claimable && !allDone);
+    }
+
     // ─── Claim Handlers ───────────────────────────────────────────────────────
 
     private void ClaimDamageReward()
@@ -206,6 +301,46 @@ public class AchievementUIManager : MonoBehaviour
         }
 
         RefreshUI();
+    }
+
+    private void ClaimRarityReward()
+    {
+        if (achievementSystem == null) return;
+
+        int oldLevel = achievementSystem.GetRarityLevel();
+        achievementSystem.ClaimRarityReward();
+        int newLevel = achievementSystem.GetRarityLevel();
+
+        if (newLevel != oldLevel && rarityAchievImage != null
+            && rarityAchievSprites != null && newLevel < rarityAchievSprites.Length)
+        {
+            StartCoroutine(AnimateTextureChange(rarityAchievImage, rarityAchievSprites[newLevel]));
+        }
+
+        RefreshUI();
+
+        if (equipmentUIManager != null)
+            equipmentUIManager.UpdateCoinsUI();
+    }
+
+    private void ClaimMissReward()
+    {
+        if (achievementSystem == null) return;
+
+        int oldLevel = achievementSystem.GetMissLevel();
+        achievementSystem.ClaimMissReward();
+        int newLevel = achievementSystem.GetMissLevel();
+
+        if (newLevel != oldLevel && missAchievImage != null
+            && missAchievSprites != null && newLevel < missAchievSprites.Length)
+        {
+            StartCoroutine(AnimateTextureChange(missAchievImage, missAchievSprites[newLevel]));
+        }
+
+        RefreshUI();
+
+        if (equipmentUIManager != null)
+            equipmentUIManager.UpdateCoinsUI();
     }
 
     // ─── Animations ───────────────────────────────────────────────────────────

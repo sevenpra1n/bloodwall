@@ -571,6 +571,8 @@ public class BattleManager : MonoBehaviour
         {
             PlaySound(missSound);
             yield return StartCoroutine(ShowEffect(enemyMissImage));
+            if (achievementSystem != null)
+                achievementSystem.AddMiss();
         }
         else
         {

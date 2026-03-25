@@ -21,8 +21,17 @@ public class AchievementSystem : MonoBehaviour
     private int damageAchievLevel; // number of levels already claimed (0-5)
     private int spendAchievLevel;  // number of levels already claimed (0-5)
 
+    private static AchievementSystem instance;
+
     private void Awake()
     {
+        if (instance != null && instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        instance = this;
+        DontDestroyOnLoad(gameObject);
         LoadData();
     }
 

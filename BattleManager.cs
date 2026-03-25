@@ -91,7 +91,7 @@ public class BattleManager : MonoBehaviour
     private const int ultimateMaxCharge = 5;
     private bool isBossStage = false;
 
-    private AchievementSystem achievementSystem;
+    [SerializeField] private AchievementSystem achievementSystem;
 
     private void Start()
     {
@@ -154,7 +154,8 @@ public class BattleManager : MonoBehaviour
         }
 
         UpdateUltimateBar();
-        achievementSystem = FindObjectOfType<AchievementSystem>();
+        if (achievementSystem == null)
+            achievementSystem = FindObjectOfType<AchievementSystem>();
         StartCoroutine(StartBattle());
     }
 

@@ -36,6 +36,8 @@ public class AchievementUIManager : MonoBehaviour
         achievementSystem = FindObjectOfType<AchievementSystem>();
         if (achievementSystem == null)
             Debug.LogError("AchievementSystem не найден в сцене! Добавьте его на GameObject.");
+        else
+            Debug.Log("[AchievementUIManager] Start(): achievementSystem инициализирован OK — " + achievementSystem.gameObject.name);
 
         equipmentUIManager = FindObjectOfType<EquipmentUIManager>();
 
@@ -64,6 +66,7 @@ public class AchievementUIManager : MonoBehaviour
 
     public void OpenAchievements()
     {
+        Debug.Log("[AchievementUIManager] OpenAchievements() вызван. achievementPanel: " + (achievementPanel == null ? "NULL" : "OK") + ", activeSelf: " + (achievementPanel != null && achievementPanel.activeSelf) + ", isAnimating: " + isAnimating);
         if (achievementPanel == null || achievementPanel.activeSelf || isAnimating)
             return;
 
@@ -82,6 +85,7 @@ public class AchievementUIManager : MonoBehaviour
 
     public void RefreshUI()
     {
+        Debug.Log("[AchievementUIManager] RefreshUI() вызван. achievementSystem: " + (achievementSystem == null ? "NULL" : "OK"));
         if (achievementSystem == null) return;
         UpdateDamageAchievement();
         UpdateSpendAchievement();
@@ -92,13 +96,22 @@ public class AchievementUIManager : MonoBehaviour
         int level = achievementSystem.GetDamageLevel();
         float totalDamage = achievementSystem.GetTotalDamage();
 
+        Debug.Log("[AchievementUIManager] UpdateDamageAchievement(): level=" + level + ", totalDamage=" + totalDamage);
+
         // Sprite
         if (damageAchievImage != null && damageAchievSprites != null && damageAchievSprites.Length > 0)
         {
             int spriteIndex = Mathf.Clamp(level, 0, damageAchievSprites.Length - 1);
             if (damageAchievSprites[spriteIndex] != null)
+            {
                 damageAchievImage.sprite = damageAchievSprites[spriteIndex];
+                Debug.Log("[AchievementUIManager] damageAchievImage.sprite обновлён, spriteIndex=" + spriteIndex);
+            }
+            else
+                Debug.LogWarning("[AchievementUIManager] damageAchievSprites[" + spriteIndex + "] == null, спрайт не назначен.");
         }
+        else
+            Debug.LogWarning("[AchievementUIManager] damageAchievImage или damageAchievSprites не назначены. damageAchievImage=" + (damageAchievImage == null ? "NULL" : "OK") + ", damageAchievSprites=" + (damageAchievSprites == null ? "NULL" : "длина " + damageAchievSprites.Length));
 
         // Progress text
         if (damageProgressText != null)
@@ -107,11 +120,16 @@ public class AchievementUIManager : MonoBehaviour
                 damageProgressText.text = "Выполнено!";
             else
                 damageProgressText.text = ((int)totalDamage).ToString() + " / " + AchievementSystem.DamageTargets[level].ToString();
+            Debug.Log("[AchievementUIManager] damageProgressText.text = \"" + damageProgressText.text + "\"");
         }
+        else
+            Debug.LogWarning("[AchievementUIManager] damageProgressText не назначен.");
 
         // Buttons
         bool allDone = level >= AchievementSystem.DamageTargets.Length;
         bool claimable = achievementSystem.IsDamageClaimable();
+
+        Debug.Log("[AchievementUIManager] Buttons: allDone=" + allDone + ", claimable=" + claimable + ", damageClaimButton=" + (damageClaimButton == null ? "NULL" : "OK") + ", damageUnavailableButton=" + (damageUnavailableButton == null ? "NULL" : "OK"));
 
         if (damageClaimButton != null)
             damageClaimButton.gameObject.SetActive(claimable && !allDone);

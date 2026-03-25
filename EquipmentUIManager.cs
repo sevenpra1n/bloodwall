@@ -48,7 +48,7 @@ public class EquipmentUIManager : MonoBehaviour
 
     [SerializeField] private Image fadePanel;
     [SerializeField] private Button openShopButton;
-    [SerializeField] private Button openAchievementsButton;
+    [SerializeField] private Button achievementsButton;
     [SerializeField] private ShopManager shopManager;
     [SerializeField] private AchievementUIManager achievementUIManager;
     [SerializeField] private LevelSystem levelSystem;
@@ -104,8 +104,8 @@ public class EquipmentUIManager : MonoBehaviour
         if (openShopButton != null)
             openShopButton.onClick.AddListener(() => shopManager.OpenShop());
 
-        if (openAchievementsButton != null && achievementUIManager != null)
-            openAchievementsButton.onClick.AddListener(() => achievementUIManager.OpenAchievements());
+        if (achievementsButton != null && achievementUIManager != null)
+            achievementsButton.onClick.AddListener(() => achievementUIManager.OpenAchievements());
 
         achievementSystem = FindObjectOfType<AchievementSystem>();
 

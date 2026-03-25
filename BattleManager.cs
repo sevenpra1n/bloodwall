@@ -91,6 +91,8 @@ public class BattleManager : MonoBehaviour
     private const int ultimateMaxCharge = 5;
     private bool isBossStage = false;
 
+    private AchievementSystem achievementSystem;
+
     private void Start()
     {
         winPanel.SetActive(false);
@@ -152,6 +154,7 @@ public class BattleManager : MonoBehaviour
         }
 
         UpdateUltimateBar();
+        achievementSystem = FindObjectOfType<AchievementSystem>();
         StartCoroutine(StartBattle());
     }
 
@@ -399,6 +402,8 @@ public class BattleManager : MonoBehaviour
             }
 
             player.BasicAttack(enemy);
+            if (achievementSystem != null)
+                achievementSystem.AddDamage(player.GetLastDamageDealt());
             StartCoroutine(HPBarShakeAll(enemyHPBars));
             StartCoroutine(BossHPBarShakeAll(bossHPBars));
         }
@@ -427,6 +432,8 @@ public class BattleManager : MonoBehaviour
             damage *= 2;
 
         enemy.TakeDamage(damage);
+        if (achievementSystem != null)
+            achievementSystem.AddDamage(damage);
         StartCoroutine(HPBarShakeAll(enemyHPBars));
         StartCoroutine(BossHPBarShakeAll(bossHPBars));
 
@@ -523,6 +530,8 @@ public class BattleManager : MonoBehaviour
             }
 
             player.UseSkill(skillIndex, enemy);
+            if (achievementSystem != null)
+                achievementSystem.AddDamage(player.GetLastDamageDealt());
             StartCoroutine(HPBarShakeAll(enemyHPBars));
             StartCoroutine(BossHPBarShakeAll(bossHPBars));
         }

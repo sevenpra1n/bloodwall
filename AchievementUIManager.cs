@@ -1,0 +1,294 @@
+using UnityEngine;
+using UnityEngine.UI;
+using System.Collections;
+
+public class AchievementUIManager : MonoBehaviour
+{
+    [Header("Achievement Panel")]
+    [SerializeField] private GameObject achievementPanel;
+    [SerializeField] private Button closeAchievementButton;
+
+    [Header("Achievement 1: Deal Damage")]
+    [SerializeField] private Image damageAchievImage;
+    [SerializeField] private Sprite[] damageAchievSprites; // 6 sprites: index = claimed levels (0-5)
+    [SerializeField] private Text damageProgressText;
+    [SerializeField] private Button damageClaimButton;
+    [SerializeField] private Button damageUnavailableButton;
+
+    [Header("Achievement 2: Spend Coins")]
+    [SerializeField] private Image spendAchievImage;
+    [SerializeField] private Sprite[] spendAchievSprites; // 6 sprites: index = claimed levels (0-5)
+    [SerializeField] private Text spendProgressText;
+    [SerializeField] private Button spendClaimButton;
+    [SerializeField] private Button spendUnavailableButton;
+
+    private CanvasGroup panelCanvasGroup;
+    private RectTransform panelRectTransform;
+    private bool isAnimating = false;
+
+    private AchievementSystem achievementSystem;
+    private EquipmentUIManager equipmentUIManager;
+
+    private void Start()
+    {
+        achievementSystem = FindObjectOfType<AchievementSystem>();
+        if (achievementSystem == null)
+            Debug.LogError("AchievementSystem не найден в сцене! Добавьте его на GameObject.");
+
+        equipmentUIManager = FindObjectOfType<EquipmentUIManager>();
+
+        if (achievementPanel != null)
+        {
+            panelCanvasGroup = achievementPanel.GetComponent<CanvasGroup>();
+            if (panelCanvasGroup == null)
+                panelCanvasGroup = achievementPanel.AddComponent<CanvasGroup>();
+
+            panelRectTransform = achievementPanel.GetComponent<RectTransform>();
+            panelCanvasGroup.alpha = 0f;
+            achievementPanel.SetActive(false);
+        }
+
+        if (closeAchievementButton != null)
+            closeAchievementButton.onClick.AddListener(CloseAchievements);
+
+        if (damageClaimButton != null)
+            damageClaimButton.onClick.AddListener(ClaimDamageReward);
+
+        if (spendClaimButton != null)
+            spendClaimButton.onClick.AddListener(ClaimSpendReward);
+    }
+
+    // ─── Open / Close ─────────────────────────────────────────────────────────
+
+    public void OpenAchievements()
+    {
+        if (achievementPanel == null || achievementPanel.activeSelf || isAnimating)
+            return;
+
+        achievementPanel.SetActive(true);
+        RefreshUI();
+        StartCoroutine(AnimateOpen());
+    }
+
+    public void CloseAchievements()
+    {
+        if (!isAnimating)
+            StartCoroutine(AnimateClose());
+    }
+
+    // ─── UI Refresh ───────────────────────────────────────────────────────────
+
+    public void RefreshUI()
+    {
+        if (achievementSystem == null) return;
+        UpdateDamageAchievement();
+        UpdateSpendAchievement();
+    }
+
+    private void UpdateDamageAchievement()
+    {
+        int level = achievementSystem.GetDamageLevel();
+        float totalDamage = achievementSystem.GetTotalDamage();
+
+        // Sprite
+        if (damageAchievImage != null && damageAchievSprites != null && damageAchievSprites.Length > 0)
+        {
+            int spriteIndex = Mathf.Clamp(level, 0, damageAchievSprites.Length - 1);
+            if (damageAchievSprites[spriteIndex] != null)
+                damageAchievImage.sprite = damageAchievSprites[spriteIndex];
+        }
+
+        // Progress text
+        if (damageProgressText != null)
+        {
+            if (level >= AchievementSystem.DamageTargets.Length)
+                damageProgressText.text = "Выполнено!";
+            else
+                damageProgressText.text = ((int)totalDamage).ToString() + " / " + AchievementSystem.DamageTargets[level].ToString();
+        }
+
+        // Buttons
+        bool allDone = level >= AchievementSystem.DamageTargets.Length;
+        bool claimable = achievementSystem.IsDamageClaimable();
+
+        if (damageClaimButton != null)
+            damageClaimButton.gameObject.SetActive(claimable && !allDone);
+        if (damageUnavailableButton != null)
+            damageUnavailableButton.gameObject.SetActive(!claimable && !allDone);
+    }
+
+    private void UpdateSpendAchievement()
+    {
+        int level = achievementSystem.GetSpendLevel();
+        int totalSpent = achievementSystem.GetTotalSpent();
+
+        // Sprite
+        if (spendAchievImage != null && spendAchievSprites != null && spendAchievSprites.Length > 0)
+        {
+            int spriteIndex = Mathf.Clamp(level, 0, spendAchievSprites.Length - 1);
+            if (spendAchievSprites[spriteIndex] != null)
+                spendAchievImage.sprite = spendAchievSprites[spriteIndex];
+        }
+
+        // Progress text
+        if (spendProgressText != null)
+        {
+            if (level >= AchievementSystem.SpendTargets.Length)
+                spendProgressText.text = "Выполнено!";
+            else
+                spendProgressText.text = totalSpent.ToString() + " / " + AchievementSystem.SpendTargets[level].ToString();
+        }
+
+        // Buttons
+        bool allDone = level >= AchievementSystem.SpendTargets.Length;
+        bool claimable = achievementSystem.IsSpendClaimable();
+
+        if (spendClaimButton != null)
+            spendClaimButton.gameObject.SetActive(claimable && !allDone);
+        if (spendUnavailableButton != null)
+            spendUnavailableButton.gameObject.SetActive(!claimable && !allDone);
+    }
+
+    // ─── Claim Handlers ───────────────────────────────────────────────────────
+
+    private void ClaimDamageReward()
+    {
+        if (achievementSystem == null) return;
+
+        int oldLevel = achievementSystem.GetDamageLevel();
+        achievementSystem.ClaimDamageReward();
+        int newLevel = achievementSystem.GetDamageLevel();
+
+        if (newLevel != oldLevel && damageAchievImage != null
+            && damageAchievSprites != null && newLevel < damageAchievSprites.Length)
+        {
+            StartCoroutine(AnimateTextureChange(damageAchievImage, damageAchievSprites[newLevel]));
+        }
+
+        RefreshUI();
+
+        if (equipmentUIManager != null)
+            equipmentUIManager.UpdateCoinsUI();
+    }
+
+    private void ClaimSpendReward()
+    {
+        if (achievementSystem == null) return;
+
+        int oldLevel = achievementSystem.GetSpendLevel();
+        achievementSystem.ClaimSpendReward();
+        int newLevel = achievementSystem.GetSpendLevel();
+
+        if (newLevel != oldLevel && spendAchievImage != null
+            && spendAchievSprites != null && newLevel < spendAchievSprites.Length)
+        {
+            StartCoroutine(AnimateTextureChange(spendAchievImage, spendAchievSprites[newLevel]));
+        }
+
+        RefreshUI();
+    }
+
+    // ─── Animations ───────────────────────────────────────────────────────────
+
+    private IEnumerator AnimateTextureChange(Image image, Sprite newSprite)
+    {
+        if (image == null) yield break;
+
+        float duration = 0.3f;
+        float elapsed = 0f;
+
+        // Fade out
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            Color c = image.color;
+            c.a = 1f - (elapsed / duration);
+            image.color = c;
+            yield return null;
+        }
+
+        if (newSprite != null)
+            image.sprite = newSprite;
+
+        // Fade in + scale up
+        elapsed = 0f;
+        image.transform.localScale = new Vector3(0.8f, 0.8f, 1f);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float progress = elapsed / duration;
+            Color c = image.color;
+            c.a = progress;
+            image.color = c;
+            image.transform.localScale = Vector3.Lerp(new Vector3(0.8f, 0.8f, 1f), Vector3.one, progress);
+            yield return null;
+        }
+
+        Color finalColor = image.color;
+        finalColor.a = 1f;
+        image.color = finalColor;
+        image.transform.localScale = Vector3.one;
+    }
+
+    private IEnumerator AnimateOpen()
+    {
+        isAnimating = true;
+
+        if (panelRectTransform != null)
+            panelRectTransform.localScale = new Vector3(0.8f, 0.8f, 1f);
+
+        float duration = 0.5f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float progress = elapsed / duration;
+
+            if (panelCanvasGroup != null)
+                panelCanvasGroup.alpha = progress;
+
+            if (panelRectTransform != null)
+                panelRectTransform.localScale = Vector3.Lerp(new Vector3(0.8f, 0.8f, 1f), Vector3.one, progress);
+
+            yield return null;
+        }
+
+        if (panelCanvasGroup != null)
+            panelCanvasGroup.alpha = 1f;
+        if (panelRectTransform != null)
+            panelRectTransform.localScale = Vector3.one;
+
+        isAnimating = false;
+    }
+
+    private IEnumerator AnimateClose()
+    {
+        isAnimating = true;
+
+        float duration = 0.5f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float progress = elapsed / duration;
+
+            if (panelCanvasGroup != null)
+                panelCanvasGroup.alpha = 1f - progress;
+
+            if (panelRectTransform != null)
+                panelRectTransform.localScale = Vector3.Lerp(Vector3.one, new Vector3(0.8f, 0.8f, 1f), progress);
+
+            yield return null;
+        }
+
+        if (panelCanvasGroup != null)
+            panelCanvasGroup.alpha = 0f;
+        if (achievementPanel != null)
+            achievementPanel.SetActive(false);
+
+        isAnimating = false;
+    }
+}

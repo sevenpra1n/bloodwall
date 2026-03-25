@@ -48,7 +48,9 @@ public class EquipmentUIManager : MonoBehaviour
 
     [SerializeField] private Image fadePanel;
     [SerializeField] private Button openShopButton;
+    [SerializeField] private Button openAchievementsButton;
     [SerializeField] private ShopManager shopManager;
+    [SerializeField] private AchievementUIManager achievementUIManager;
     [SerializeField] private LevelSystem levelSystem;
     [SerializeField] private AudioClip[] stageRageSounds = new AudioClip[5];
     [SerializeField] private Image[] stageRageImages = new Image[5];
@@ -68,6 +70,7 @@ public class EquipmentUIManager : MonoBehaviour
     private AudioSource musicSource;
 
     private int currentStage = 0;
+    private AchievementSystem achievementSystem;
 
     private void Start()
     {
@@ -100,6 +103,11 @@ public class EquipmentUIManager : MonoBehaviour
 
         if (openShopButton != null)
             openShopButton.onClick.AddListener(() => shopManager.OpenShop());
+
+        if (openAchievementsButton != null && achievementUIManager != null)
+            openAchievementsButton.onClick.AddListener(() => achievementUIManager.OpenAchievements());
+
+        achievementSystem = FindObjectOfType<AchievementSystem>();
 
         if (fadePanel == null)
         {
@@ -247,6 +255,10 @@ public class EquipmentUIManager : MonoBehaviour
 
         PlayerPrefs.SetInt("PlayerCoins", coins);
         PlayerPrefs.Save();
+
+        // Track for spend-coins achievement
+        if (achievementSystem != null)
+            achievementSystem.AddSpentCoins(amount);
 
         UpdateCoinsUI();
         Debug.Log("💸 Потрачено " + amount + " монет. Осталось: " + coins);

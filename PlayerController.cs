@@ -17,6 +17,7 @@ public class PlayerController : Character
 
     private bool lastAttackWasCrit = false;
     private bool lastAttackWasMiss = false;
+    private float lastDamageDealt = 0f;
 
     private BattleManager battleManager;
 
@@ -81,6 +82,7 @@ public class PlayerController : Character
         if (lastAttackWasCrit)
             damage *= 2;
 
+        lastDamageDealt = damage;
         enemy.TakeDamage(damage);
     }
 
@@ -90,8 +92,11 @@ public class PlayerController : Character
         if (lastAttackWasCrit)
             damage *= 2;
 
+        lastDamageDealt = damage;
         enemy.TakeDamage(damage);
     }
+
+    public float GetLastDamageDealt() => lastDamageDealt;
 
     public string GetSkillName(int index)
     {

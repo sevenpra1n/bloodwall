@@ -119,6 +119,9 @@ public class MenuManager : MonoBehaviour
         // ← ОЧИЩАЕМ ВСЕ ПОКУПКИ (ВСЕ Purchased_* КЛЮЧИ)
         ResetAllPurchases();
 
+        // ← СБРАСЫВАЕМ ДОСТИЖЕНИЯ
+        AchievementSystem.ResetAchievements();
+
         // ← УСТАНАВЛИВАЕМ СТАРТОВЫЕ ЗНАЧЕНИЯ
         PlayerPrefs.SetInt("PlayerCoins", 0);         // 0 монет в начале
         PlayerPrefs.SetInt("PlayerExp", 0);           // 0 опыта

@@ -56,6 +56,10 @@ public class EquipmentUIManager : MonoBehaviour
     [SerializeField] private Image[] stageRageImages = new Image[5];
     [SerializeField] private Text[] stageRageTexts = new Text[5];
 
+    [SerializeField] private Button characterSelectButton;       // "Выбрать персонажа" button
+    [SerializeField] private CharacterSelectionPanel characterSelectionPanel;
+    [SerializeField] private KnightAnimator knightAnimator;      // menu character animator
+
     private int coins = 0;
     private int exp = 0;
     private EquipmentType currentSelectedSlot;
@@ -107,7 +111,25 @@ public class EquipmentUIManager : MonoBehaviour
         if (achievementsButton != null && achievementUIManager != null)
             achievementsButton.onClick.AddListener(() => achievementUIManager.OpenAchievements());
 
+        if (characterSelectButton != null && characterSelectionPanel != null)
+            characterSelectButton.onClick.AddListener(() => characterSelectionPanel.gameObject.SetActive(true));
+
+        if (characterSelectionPanel != null)
+            characterSelectionPanel.gameObject.SetActive(false);
+
         achievementSystem = FindObjectOfType<AchievementSystem>();
+
+        // Refresh CharacterManager data and apply current character sprites to menu animator
+        if (CharacterManager.Instance != null)
+        {
+            CharacterManager.Instance.RefreshData();
+            if (knightAnimator != null)
+            {
+                CharacterData charData = CharacterManager.Instance.GetCurrentCharacter();
+                if (charData != null && charData.idleSprites != null && charData.idleSprites.Length > 0)
+                    knightAnimator.SetIdleSprites(charData.idleSprites);
+            }
+        }
 
         if (fadePanel == null)
         {

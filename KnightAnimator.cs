@@ -38,4 +38,14 @@ public class KnightAnimator : MonoBehaviour
             knightImage.sprite = idleSprites[currentFrame];
         }
     }
+
+    public void SetIdleSprites(Sprite[] newIdleSprites)
+    {
+        if (newIdleSprites == null || newIdleSprites.Length == 0) return;
+        idleSprites = newIdleSprites;
+        currentFrame = 0;
+        frameTimer = 0f;
+        if (knightImage != null)
+            knightImage.sprite = idleSprites[0];
+    }
 }

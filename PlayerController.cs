@@ -21,23 +21,48 @@ public class PlayerController : Character
 
     private BattleManager battleManager;
 
+    private CharacterType currentCharacter = CharacterType.Knight;
+    private float dodgeChance = 0.1f;
+
     protected override void Start()
     {
-        // ЗАГРУЖАЕМ МОЩЬ из EquipmentScene
+        // Загружаем мощь из EquipmentScene
         power = PlayerPrefs.GetInt("PlayerPower", 100);
-
         Debug.Log("Загружена мощь игрока: " + power);
 
-        maxHP = power * 1f;
+        // Загружаем параметры персонажа из CharacterManager
+        float hpMultiplier = 1.0f;
+        dodgeChance = 0.1f;
+
+        if (CharacterManager.Instance != null)
+        {
+            currentCharacter = CharacterManager.Instance.GetCurrentCharacterType();
+            CharacterData charData = CharacterManager.Instance.GetCurrentCharacter();
+            if (charData != null)
+            {
+                hpMultiplier = charData.hpMultiplier > 0f ? charData.hpMultiplier : 1.0f;
+                dodgeChance  = charData.dodgeChance;
+            }
+        }
+
+        maxHP     = power * hpMultiplier;
         currentHP = maxHP;
         currentMana = maxMana;
 
         battleManager = FindObjectOfType<BattleManager>();
 
-        InitializeKnightSkills();
+        InitializeSkills(currentCharacter);
 
         UpdateHPUI();
         UpdateManaUI();
+    }
+
+    private void InitializeSkills(CharacterType type)
+    {
+        if (type == CharacterType.Archer)
+            InitializeArcherSkills();
+        else
+            InitializeKnightSkills();
     }
 
     private void InitializeKnightSkills()
@@ -48,6 +73,23 @@ public class PlayerController : Character
             manaCost = 30,
             isLocked = false,
             damageMultiplier = 0.3f
+        };
+
+        skills[1] = new PlayerSkill { name = "Заблокировано", manaCost = 0, isLocked = true, damageMultiplier = 0 };
+        skills[2] = new PlayerSkill { name = "Заблокировано", manaCost = 0, isLocked = true, damageMultiplier = 0 };
+        skills[3] = new PlayerSkill { name = "Заблокировано", manaCost = 0, isLocked = true, damageMultiplier = 0 };
+    }
+
+    private void InitializeArcherSkills()
+    {
+        skills[0] = new PlayerSkill
+        {
+            name = "Выстрел",
+            manaCost = 25,
+            isLocked = false,
+            damageMultiplier = 1.5f, // default; will be randomized in UseSkill
+            isArrowSkill = true,
+            randomMultipliers = new float[] { 1.5f, 2.0f, 3.0f }
         };
 
         skills[1] = new PlayerSkill { name = "Заблокировано", manaCost = 0, isLocked = true, damageMultiplier = 0 };
@@ -77,13 +119,32 @@ public class PlayerController : Character
         currentMana -= skills[skillIndex].manaCost;
         UpdateManaUI();
 
-        float damage = power * skills[skillIndex].damageMultiplier;
+        float multiplier = skills[skillIndex].damageMultiplier;
+
+        // Archer arrow skill: pick a random damage multiplier
+        if (skills[skillIndex].isArrowSkill &&
+            skills[skillIndex].randomMultipliers != null &&
+            skills[skillIndex].randomMultipliers.Length > 0)
+        {
+            int randIdx = Random.Range(0, skills[skillIndex].randomMultipliers.Length);
+            multiplier = skills[skillIndex].randomMultipliers[randIdx];
+            Debug.Log("🏹 Выстрел! Множитель: x" + multiplier);
+        }
+
+        float damage = power * multiplier;
 
         if (lastAttackWasCrit)
             damage *= 2;
 
         lastDamageDealt = damage;
         enemy.TakeDamage(damage);
+    }
+
+    public bool IsArrowSkill(int skillIndex)
+    {
+        if (skills == null || skillIndex < 0 || skillIndex >= skills.Length || skills[skillIndex] == null)
+            return false;
+        return skills[skillIndex].isArrowSkill;
     }
 
     public void BasicAttack(Character enemy)
@@ -178,7 +239,7 @@ public class PlayerController : Character
 
     public bool CheckMiss()
     {
-        lastAttackWasMiss = Random.value < 0.1f;
+        lastAttackWasMiss = Random.value < dodgeChance;
         return lastAttackWasMiss;
     }
 
@@ -203,10 +264,22 @@ public class PlayerController : Character
         return power;
     }
 
+    public CharacterType GetCurrentCharacterType()
+    {
+        return currentCharacter;
+    }
+
     public void SetPower(float newPower)
     {
         power = newPower;
-        maxHP = power * 1f;
+        float hpMultiplier = 1.0f;
+        if (CharacterManager.Instance != null)
+        {
+            CharacterData charData = CharacterManager.Instance.GetCurrentCharacter();
+            if (charData != null && charData.hpMultiplier > 0f)
+                hpMultiplier = charData.hpMultiplier;
+        }
+        maxHP = power * hpMultiplier;
         currentHP = maxHP;
         UpdateHPUI();
     }
@@ -214,8 +287,10 @@ public class PlayerController : Character
 
 public class PlayerSkill
 {
-    public string name;
-    public int manaCost;
-    public bool isLocked;
-    public float damageMultiplier;
+    public string  name;
+    public int     manaCost;
+    public bool    isLocked;
+    public float   damageMultiplier;
+    public bool    isArrowSkill;       // Archer arrow skill uses random multiplier
+    public float[] randomMultipliers;  // e.g. { 1.5f, 2.0f, 3.0f }
 }

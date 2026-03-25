@@ -74,6 +74,11 @@ public class BattleManager : MonoBehaviour
 
     [SerializeField] private StageData[] stagesData = new StageData[5];
 
+    // Arrow projectile for Archer skill (assign the ArrowProjectile component in Inspector)
+    [SerializeField] private ArrowProjectile arrowProjectile;
+    [SerializeField] private RectTransform   arrowStartPoint;  // position near the player
+    [SerializeField] private RectTransform   arrowEndPoint;    // position near the enemy
+
     private bool isPlayerTurn = true;
     private bool battleActive = true;
     private bool isAnimating = false;
@@ -156,6 +161,20 @@ public class BattleManager : MonoBehaviour
         UpdateUltimateBar();
         if (achievementSystem == null)
             achievementSystem = FindObjectOfType<AchievementSystem>();
+
+        // Apply selected character's sprites to the player AnimationController
+        if (CharacterManager.Instance != null && playerAnimController != null)
+        {
+            CharacterData charData = CharacterManager.Instance.GetCurrentCharacter();
+            if (charData != null)
+            {
+                if (charData.idleSprites != null && charData.idleSprites.Length > 0)
+                    playerAnimController.SetIdleSprites(charData.idleSprites);
+                if (charData.attackSprites != null && charData.attackSprites.Length > 0)
+                    playerAnimController.SetAttackSprites(charData.attackSprites);
+            }
+        }
+
         StartCoroutine(StartBattle());
     }
 
@@ -505,6 +524,15 @@ public class BattleManager : MonoBehaviour
 
         PlayAttackSound(playerAttackSound);
         yield return StartCoroutine(playerAnimController.PlayAttackAnimation());
+
+        // For the Archer's arrow skill, play the arrow flight animation before damage
+        bool isArrow = player.IsArrowSkill(skillIndex);
+        if (isArrow && arrowProjectile != null && arrowStartPoint != null && arrowEndPoint != null)
+        {
+            yield return StartCoroutine(arrowProjectile.Launch(
+                arrowStartPoint.localPosition,
+                arrowEndPoint.localPosition));
+        }
 
         bool isMiss = player.CheckMiss();
         bool isCrit = player.CheckCrit();

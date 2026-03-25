@@ -1174,12 +1174,16 @@ public class BattleManager : MonoBehaviour
 
     private void ContinueAfterWin()
     {
+        if (achievementSystem != null)
+            achievementSystem.SaveData();
         // ← ВСЕГДА ИДЁМ В СНАРЯЖЕНИЕ, НЕ В БИТВУ
         SceneManager.LoadScene("EquipmentScene");
     }
 
     private void ContinueAfterLose()
     {
+        if (achievementSystem != null)
+            achievementSystem.SaveData();
         SceneManager.LoadScene("EquipmentScene");
     }
 

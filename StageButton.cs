@@ -24,8 +24,22 @@ public class StageButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [SerializeField] private Image buttonEnemyIcon;
 
     private Button button;
+    internal Button Button => button;
     private Image stageButtonImage;
     private CanvasGroup tooltipCanvasGroup;
+
+    private static readonly System.Collections.Generic.List<StageButton> allStageButtons =
+        new System.Collections.Generic.List<StageButton>();
+
+    private void Awake()
+    {
+        allStageButtons.Add(this);
+    }
+
+    private void OnDestroy()
+    {
+        allStageButtons.Remove(this);
+    }
 
     private void Start()
     {
@@ -134,6 +148,13 @@ public class StageButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private void StartBattle()
     {
         Debug.Log("🎮 ЗАПУСК ЭТАЖА " + (stageIndex + 1));
+
+        // Disable all StageButtons to prevent double-click
+        foreach (StageButton sb in allStageButtons)
+        {
+            if (sb.Button != null)
+                sb.Button.interactable = false;
+        }
 
         PlayerPrefs.SetInt("CurrentStage", stageIndex);
         PlayerPrefs.Save();

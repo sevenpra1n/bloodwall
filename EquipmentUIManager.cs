@@ -249,8 +249,8 @@ public class EquipmentUIManager : MonoBehaviour
 
     public void SpendCoins(int amount)
     {
-        coins = PlayerPrefs.GetInt("PlayerCoins", 0);
-        coins -= amount;
+        int oldCoins = PlayerPrefs.GetInt("PlayerCoins", 0);
+        coins = oldCoins - amount;
         if (coins < 0) coins = 0;
 
         PlayerPrefs.SetInt("PlayerCoins", coins);
@@ -260,50 +260,59 @@ public class EquipmentUIManager : MonoBehaviour
         if (achievementSystem != null)
             achievementSystem.AddSpentCoins(amount);
 
-        UpdateCoinsUI();
+        StartCoroutine(AnimateCoinChange(oldCoins, coins));
         Debug.Log("💸 Потрачено " + amount + " монет. Осталось: " + coins);
     }
 
     public void AddCoins(int amount)
     {
-        coins = PlayerPrefs.GetInt("PlayerCoins", 0);
-        coins += amount;
+        int oldCoins = PlayerPrefs.GetInt("PlayerCoins", 0);
+        coins = oldCoins + amount;
 
         PlayerPrefs.SetInt("PlayerCoins", coins);
         PlayerPrefs.Save();
 
-        UpdateCoinsUI();
+        StartCoroutine(AnimateCoinChange(oldCoins, coins));
         Debug.Log("💰 Добавлено " + amount + " монет. Всего: " + coins);
     }
 
     private IEnumerator AnimatePowerChange(int oldPower, int newPower)
     {
+        yield return StartCoroutine(AnimateNumberText(powerText, oldPower, newPower));
+    }
+
+    private IEnumerator AnimateCoinChange(int oldCoins, int newCoins)
+    {
+        if (coinsText == null) yield break;
+        yield return StartCoroutine(AnimateNumberText(coinsText, oldCoins, newCoins));
+    }
+
+    private IEnumerator AnimateNumberText(Text textComponent, int oldValue, int newValue)
+    {
+        if (textComponent == null) yield break;
+
         float duration = 0.8f;
         float elapsed = 0f;
 
-        // ← ОПРЕДЕЛЯЕМ НАПРАВЛЕНИЕ И ЦВЕТ
-        bool isIncrease = newPower > oldPower;
+        bool isIncrease = newValue > oldValue;
         Color targetColor = isIncrease ? Color.green : Color.red;
-        Color originalColor = powerText.color;
+        Color originalColor = textComponent.color;
 
-        // ← СРАЗУ УСТАНАВЛИВАЕМ ЦВЕТ
-        powerText.color = targetColor;
+        textComponent.color = targetColor;
 
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
             float progress = elapsed / duration;
 
-            // ← ПЛАВНОЕ ИЗМЕНЕНИЕ ЧИСЛА
-            int currentPower = Mathf.RoundToInt(Mathf.Lerp(oldPower, newPower, progress));
-            powerText.text = currentPower.ToString();
+            int current = Mathf.RoundToInt(Mathf.Lerp(oldValue, newValue, progress));
+            textComponent.text = current.ToString();
 
             yield return null;
         }
 
-        // ← ВОЗВРАЩАЕМ ИСХОДНЫЙ ЦВЕТ
-        powerText.text = newPower.ToString();
-        powerText.color = originalColor;
+        textComponent.text = newValue.ToString();
+        textComponent.color = originalColor;
     }
 
     private void ShowEquipmentList(EquipmentType type)
@@ -361,6 +370,10 @@ public class EquipmentUIManager : MonoBehaviour
 
         coins = PlayerPrefs.GetInt("PlayerCoins", 0);
         UpdateCoinsUI();
+
+        // Track rarity achievement
+        if (achievementSystem != null)
+            achievementSystem.AddRarityItem(equipment.rarity);
 
         // ← СОХРАНЯЕМ СНАРЯЖЕНИЕ
         SaveEquipmentData();
@@ -687,7 +700,7 @@ public class EquipmentUIManager : MonoBehaviour
 
     private IEnumerator TransitionToBattle()
     {
-        float fadeDuration = 2f;
+        float fadeDuration = 0.6f;
         float elapsed = 0f;
         float startVolume = musicSource.volume;
 
@@ -702,7 +715,7 @@ public class EquipmentUIManager : MonoBehaviour
         musicSource.volume = 0;
         musicSource.Stop();
 
-        yield return StartCoroutine(FadeToBlack(2f));
+        yield return StartCoroutine(FadeToBlack(0.6f));
         yield return StartCoroutine(ShowStageImage(9f));
 
         SceneManager.LoadScene("BattleScene");

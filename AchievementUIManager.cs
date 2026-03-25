@@ -11,6 +11,7 @@ public class AchievementUIManager : MonoBehaviour
     [Header("Achievement 1: Deal Damage")]
     [SerializeField] private Image damageAchievImage;
     [SerializeField] private Sprite[] damageAchievSprites; // 6 sprites: index = claimed levels (0-5)
+    [SerializeField] private Text damageAchievTitle;
     [SerializeField] private Text damageProgressText;
     [SerializeField] private Button damageClaimButton;
     [SerializeField] private Button damageUnavailableButton;
@@ -18,6 +19,7 @@ public class AchievementUIManager : MonoBehaviour
     [Header("Achievement 2: Spend Coins")]
     [SerializeField] private Image spendAchievImage;
     [SerializeField] private Sprite[] spendAchievSprites; // 6 sprites: index = claimed levels (0-5)
+    [SerializeField] private Text spendAchievTitle;
     [SerializeField] private Text spendProgressText;
     [SerializeField] private Button spendClaimButton;
     [SerializeField] private Button spendUnavailableButton;
